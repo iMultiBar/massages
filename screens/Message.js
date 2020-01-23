@@ -10,75 +10,41 @@ import {
   Button,
   TextInput
 } from "react-native";
-
 import firebase from "firebase/app";
 import "firebase/auth";
 import db from "../db.js";
+import "firebase/database";
 
-export default function SettingsScreen() {
-  const [displayName, setDisplayName] = useState("");
-  const [photoURL, setPhotoURL] = useState("");
+export default ({ message, handleEdit }) => {
+  const [from, setFrom] = useState(null);
 
   const handleSet = async () => {
     const info = await db
-      .collection("users")
-      .doc(firebase.auth().currentUser.uid)
-      .get();
-    setDisplayName(info.displayName);
-    setPhotoURL(info.photoURL);
+      .collection(`users`)
+      .doc(message.from)
+      .get(snapShot => {
+        console.log("kkkkk DB", snapShot.data());
+      });
   };
-
   useEffect(() => {
-    // setDisplayName(firebase.auth().currentUser.displayName);
-    // setDisplayName(firebase.auth().currentUser.photoURL);
     handleSet();
   }, []);
 
-  const handleSave = () => {
-    // firebase.auth().currentUser.updateProfile({
-    //   displayName,
-    //   photoURL
-    // });
-    db.collection("users")
-      .doc(firebase.auth().currentUser.uid)
-      .update({ displayName, photoURL });
+  const handleDelete = message => {
+    db.collection("Messages")
+      .doc(message.id)
+      .delete();
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView>
-        <TextInput
-          style={{
-            height: 40,
-            borderColor: "gray",
-            borderWidth: 1,
-            fontSize: 24
-          }}
-          onChangeText={setDisplayName}
-          placeholder="Display Name"
-          value={displayName}
-        />
-
-        <TextInput
-          style={{
-            height: 40,
-            borderColor: "gray",
-            borderWidth: 1,
-            fontSize: 24
-          }}
-          onChangeText={setPhotoURL}
-          placeholder="Photo URL"
-          value={photoURL}
-        />
-
-        <Button title="Save" onPress={handleSave} />
-      </ScrollView>
-    </View>
+    <>
+      <Text>
+        {message.From} - {message.To} - {message.Text}
+      </Text>
+      <Button title="Edit" onPress={() => handleEdit(message)} />
+      <Button title="X" onPress={() => handleDelete(message)} />
+    </>
   );
-}
-
-SettingsScreen.navigationOptions = {
-  title: "Settings"
 };
 
 const styles = StyleSheet.create({

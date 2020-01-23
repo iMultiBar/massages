@@ -12,6 +12,7 @@ import {
   TextInput
 } from "react-native";
 import db from "../db.js";
+import Message from "./Message.js";
 import firebase from "firebase/app";
 import "firebase/auth";
 import { MonoText } from "../components/StyledText";
@@ -33,10 +34,10 @@ export default function HomeScreen() {
     });
   }, []);
 
-  const handleDelete = message => {
-    db.collection("Messages")
-      .doc(message.id)
-      .delete();
+  const handleEdit = message => {
+    setTo(message.To);
+    setText(message.Text);
+    setId(message.id);
   };
 
   const handleSend = () => {
@@ -57,10 +58,9 @@ export default function HomeScreen() {
     setId("");
   };
 
-  const handleEdit = message => {
-    setTo(message.To);
-    setText(message.Text);
-    setId(message.id);
+  const handleLogout = () => {
+    firebase.auth().signOut();
+    console.log("logOff completed");
   };
 
   return (
@@ -71,13 +71,7 @@ export default function HomeScreen() {
         keyboardShouldPersistTaps="always"
       >
         {messages.map((message, i) => (
-          <View style={styles.getStartedText} key={i}>
-            <Text>
-              {message.From} - {message.To} - {message.Text}
-            </Text>
-            <Button title="Edit" onPress={() => handleEdit(message)} />
-            <Button title="X" onPress={() => handleDelete(message)} />
-          </View>
+          <Message key={i} message={message} handleEdit={handleEdit} />
         ))}
       </ScrollView>
 
@@ -94,7 +88,8 @@ export default function HomeScreen() {
         value={text}
       />
 
-      <Button title="SEND" onPress={() => handleSend()} />
+      <Button title="SEND" onPress={handleSend} />
+      <Button title="Logout" onPress={handleLogout} />
     </View>
   );
 }
