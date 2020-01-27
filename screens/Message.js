@@ -16,18 +16,18 @@ import db from "../db.js";
 import "firebase/database";
 
 export default ({ message, handleEdit }) => {
-  const [from, setFrom] = useState(null);
+  const [user, setUser] = useState(null);
 
-  const handleSet = async () => {
-    const info = await db
+  const handleUser = async () => {
+    const snap = await db
       .collection(`users`)
-      .doc(message.from)
-      .get(snapShot => {
-        console.log("kkkkk DB", snapShot.data());
-      });
+      .doc(message.From)
+      .get();
+    console.log("kkkkk DB", snap.data());
+    setUser(snap.data());
   };
   useEffect(() => {
-    handleSet();
+    handleUser();
   }, []);
 
   const handleDelete = message => {
@@ -37,13 +37,19 @@ export default ({ message, handleEdit }) => {
   };
 
   return (
-    <>
-      <Text>
-        {message.From} - {message.To} - {message.Text}
-      </Text>
-      <Button title="Edit" onPress={() => handleEdit(message)} />
-      <Button title="X" onPress={() => handleDelete(message)} />
-    </>
+    user && (
+      <View style={{ flexDirection: "row", paddingTop: 50 }}>
+        <Image
+          source={{ uri: user.photoURL }}
+          style={{ width: 50, height: 50 }}
+        />
+        <Text>
+          {user.displayName} - {message.To} - {message.Text}
+        </Text>
+        <Button title="Edit" onPress={() => handleEdit(message)} />
+        <Button title="X" onPress={() => handleDelete(message)} />
+      </View>
+    )
   );
 };
 

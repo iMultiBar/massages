@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useReducer } from "react";
 import {
   Image,
   Platform,
@@ -14,18 +14,29 @@ import {
 import firebase from "firebase/app";
 import "firebase/auth";
 import db from "../db.js";
+import * as ImagePicker from "expo-image-picker";
 
 export default function SettingsScreen() {
+  const [hasCameraRollPermission, setHasCameraRollPermission] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [photoURL, setPhotoURL] = useState("");
 
+  const askPermission = async () => {
+    const { status } = await ImagePicker.requestCameraRollPermissionsAsync();
+    setHasCameraRollPermission(status === "granted");
+  };
+
+  useEffect(() => {
+    askPermission();
+  }, []);
+
   const handleSet = async () => {
-    const info = await db
+    const snap = await db
       .collection("users")
       .doc(firebase.auth().currentUser.uid)
       .get();
-    setDisplayName(info.displayName);
-    setPhotoURL(info.photoURL);
+    setDisplayName(snap.data().displayName);
+    setPhotoURL(snap.data().photoURL);
   };
 
   useEffect(() => {
@@ -41,11 +52,22 @@ export default function SettingsScreen() {
     // });
     db.collection("users")
       .doc(firebase.auth().currentUser.uid)
-      .update({ displayName, photoURL });
+      .set({ displayName, photoURL });
+    handleSet();
+  };
+
+  const handlePickImage = () => {
+    //show camera roll, allow user to select, set photoURL
+    // - use firebase storage
+    // - upload selected image to defult buc, nameing with url
+    // - get url and set photoURL
   };
 
   return (
     <View style={styles.container}>
+      {photoURL !== "" && (
+        <Image source={{ uri: photoURL }} style={{ width: 100, height: 100 }} />
+      )}
       <ScrollView>
         <TextInput
           style={{
@@ -71,6 +93,7 @@ export default function SettingsScreen() {
           value={photoURL}
         />
 
+        <Button title="Pick Image" onPress={handlePickImage} />
         <Button title="Save" onPress={handleSave} />
       </ScrollView>
     </View>
