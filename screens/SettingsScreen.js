@@ -8,18 +8,22 @@ import {
   TouchableOpacity,
   View,
   Button,
-  TextInput
+  TextInput,
+  Dimensions
 } from "react-native";
 
 import firebase from "firebase/app";
 import "firebase/auth";
+import "firebase/storage";
 import db from "../db.js";
 import * as ImagePicker from "expo-image-picker";
-
+import { setConfigurationAsync } from "expo/build/AR";
+import MapView, { Marker } from "react-native-maps";
 export default function SettingsScreen() {
   const [hasCameraRollPermission, setHasCameraRollPermission] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [photoURL, setPhotoURL] = useState("");
+  const [uri, setUri] = useState("");
 
   const askPermission = async () => {
     const { status } = await ImagePicker.requestCameraRollPermissionsAsync();
@@ -45,29 +49,59 @@ export default function SettingsScreen() {
     handleSet();
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // firebase.auth().currentUser.updateProfile({
     //   displayName,
     //   photoURL
     // });
+    if (uri !== "") {
+      const response = await fetch(uri);
+      const Blob = await response.blob();
+      const putResult = await firebase
+        .storage()
+        .ref()
+        .child(firebase.auth().currentUser.uid)
+        .put(Blob);
+
+      const url = await firebase
+        .storage()
+        .ref()
+        .child(firebase.auth().currentUser.uid)
+        .getDownloadURL();
+      console.log("download url: ", url);
+
+      setPhotoURL(url);
+    }
+
     db.collection("users")
       .doc(firebase.auth().currentUser.uid)
       .set({ displayName, photoURL });
-    handleSet();
   };
 
-  const handlePickImage = () => {
+  const handlePickImage = async () => {
     //show camera roll, allow user to select, set photoURL
-    // - use firebase storage
-    // - upload selected image to defult buc, nameing with url
-    // - get url and set photoURL
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1
+    });
+    console.log("image picker: ", result);
+
+    if (!result.cancelled) {
+      //this.setState({ image: result.uri });
+      setUri(result.uri);
+      console.log("cancelled: ", result.uri);
+
+      // - use firebase storage
+
+      // - upload selected image to defult buc, nameing with url
+      // - get url and set photoURL
+    }
   };
 
   return (
     <View style={styles.container}>
-      {photoURL !== "" && (
-        <Image source={{ uri: photoURL }} style={{ width: 100, height: 100 }} />
-      )}
       <ScrollView>
         <TextInput
           style={{
@@ -80,21 +114,16 @@ export default function SettingsScreen() {
           placeholder="Display Name"
           value={displayName}
         />
-
-        <TextInput
-          style={{
-            height: 40,
-            borderColor: "gray",
-            borderWidth: 1,
-            fontSize: 24
-          }}
-          onChangeText={setPhotoURL}
-          placeholder="Photo URL"
-          value={photoURL}
-        />
-
+        {photoURL !== "" && (
+          <Image
+            source={{ uri: photoURL }}
+            style={{ width: 100, height: 100 }}
+          />
+        )}
         <Button title="Pick Image" onPress={handlePickImage} />
         <Button title="Save" onPress={handleSave} />
+
+        <MapView showsUserLocation={true} style={styles.mapStyle} />
       </ScrollView>
     </View>
   );
@@ -108,6 +137,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff"
+  },
+  mapStyle: {
+    width: 350,
+    height: 500,
+    marginLeft: "3%"
   },
   developmentModeText: {
     marginBottom: 20,

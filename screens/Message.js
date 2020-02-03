@@ -18,14 +18,16 @@ import "firebase/database";
 export default ({ message, handleEdit }) => {
   const [user, setUser] = useState(null);
 
-  const handleUser = async () => {
-    const snap = await db
+  const handleUser = () => {
+    const snap = db
       .collection(`users`)
       .doc(message.From)
-      .get();
-    console.log("kkkkk DB", snap.data());
-    setUser(snap.data());
+      .onSnapshot(docSnapshot => {
+        console.log("user snapshot: ", docSnapshot.data());
+        setUser(docSnapshot.data());
+      });
   };
+
   useEffect(() => {
     handleUser();
   }, []);
